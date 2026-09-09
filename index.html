@@ -169,13 +169,91 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        /* ESTILOS DA ANIMAÇÃO DE ABERTURA */
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            transition: opacity 0.5s ease-out;
+        }
+
+        #cavebaby-container {
+            font-size: 5rem;
+            position: relative;
+            /* Começa fora da tela pela esquerda */
+            transform: translateX(-150vw); 
+            animation: crawl 2s ease-out forwards;
+        }
+
+        #club-emoji {
+            position: absolute;
+            right: -30px;
+            top: -10px;
+            font-size: 4rem;
+            transform-origin: bottom left;
+        }
+
+        #splash-text {
+            font-size: 3rem;
+            color: var(--danger);
+            font-weight: 900;
+            margin-top: 20px;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Animação do engatinhar (pulos curtos) */
+        @keyframes crawl {
+            0% { transform: translateX(-150vw) rotate(-10deg) translateY(0); }
+            20% { transform: translateX(-90vw) rotate(10deg) translateY(-20px); }
+            40% { transform: translateX(-30vw) rotate(-10deg) translateY(0); }
+            60% { transform: translateX(10vw) rotate(10deg) translateY(-20px); }
+            80% { transform: translateX(20vw) rotate(-10deg) translateY(0); }
+            100% { transform: translateX(0) rotate(0deg) translateY(0); } /* Para no meio */
+        }
+
+        /* Animação da batida do tacape */
+        .slam-animation {
+            animation: slam 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes slam {
+            0% { transform: rotate(45deg); }
+            100% { transform: rotate(-70deg) translateY(20px); }
+        }
+
+        /* Tremor da tela inteira */
+        .shake-screen {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
     </style>
 </head>
 <body>
-
+    <!-- ANIMAÇÃO DE ABERTURA (SPLASH SCREEN) -->
+    <div id="splash-screen">
+        <div id="cavebaby-container">
+            <span id="baby-emoji">👶</span>
+            <span id="club-emoji" style="display: none;">🪵</span>
+        </div>
+        <div id="splash-text">NEM A PAU!</div>
+    </div>
     <!-- TELA 1 -->
     <div id="screen-1" class="screen active">
-        <h1>Nem a Pau! 🛑</h1>
+        <h1>Nem a pau! 🛑</h1>
         <div class="card">
             <h2>Quantos jogadores?</h2>
             <input type="number" id="num-players" min="2" max="10" value="2">
@@ -185,7 +263,7 @@
 
     <!-- TELA 2 -->
     <div id="screen-2" class="screen">
-        <h1>Nem a Pau! 🛑</h1>
+        <h1>Nem a pau! 🛑</h1>
         <div class="card">
             <h2>Nomes dos Jogadores</h2>
             <div id="names-container"></div>
@@ -221,6 +299,41 @@
     </div>
 
     <script>
+        // CONTROLE DA ANIMAÇÃO INICIAL
+        window.addEventListener('load', () => {
+            const baby = document.getElementById('baby-emoji');
+            const club = document.getElementById('club-emoji');
+            const splashText = document.getElementById('splash-text');
+            const splashScreen = document.getElementById('splash-screen');
+            
+            // Aguarda 2 segundos para o engatinhar terminar
+            setTimeout(() => {
+                // Bebê fica bravo e puxa o tacape
+                baby.innerText = "😠";
+                club.style.display = "inline-block";
+                
+                // Dá um tempinho dramático de 0.5s e bate o tacape
+                setTimeout(() => {
+                    club.classList.add('slam-animation');
+                    
+                    // Treme a tela e mostra o texto "NEM A PAU!" no exato momento da batida
+                    setTimeout(() => {
+                        document.body.classList.add('shake-screen');
+                        splashText.style.opacity = '1';
+                        splashText.style.transform = 'scale(1)';
+                        
+                        // Aguarda 1.5s e some com a tela de carregamento para o jogo começar
+                        setTimeout(() => {
+                            splashScreen.style.opacity = '0';
+                            setTimeout(() => {
+                                splashScreen.style.display = 'none';
+                                document.body.classList.remove('shake-screen');
+                            }, 500);
+                        }, 1500);
+                    }, 150); // Delay do movimento da batida
+                }, 500);
+            }, 2000); // Duração do engatinhar
+        });
         const allQuestions = [
             // CORPO HUMANO E BIOLOGIA
             { q: "Quantos ossos tem o corpo humano adulto?", a: "206" },
