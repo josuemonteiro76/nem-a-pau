@@ -3,6 +3,489 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nem a Pau!</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --danger: #EF4444;
+            --danger-hover: #DC2626;
+            --bg: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text: #1F2937;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #E0E7FF 0%, #F3F4F6 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; text-align: center; }
+        h2 { font-size: 1.5rem; color: #4B5563; margin-bottom: 20px; text-align: center; }
+
+        .card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover { background: var(--primary-hover); }
+        button:disabled { background: #9CA3AF; cursor: not-allowed; }
+
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: var(--danger-hover); }
+
+        /* Jogo */
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+
+        .question { font-size: 1.4rem; font-weight: 600; margin-bottom: 20px; }
+        .last-guess { font-size: 1.2rem; color: #DC2626; font-weight: bold; margin-bottom: 20px; padding: 10px; background: #FEE2E2; border-radius: 8px; }
+
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            width: 100%;
+        }
+
+        .player-card {
+            background: white;
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            opacity: 0.6;
+            transition: all 0.3s;
+        }
+
+        .player-card.active-turn {
+            opacity: 1;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
+            transform: scale(1.02);
+        }
+
+        .player-icon { font-size: 3rem; margin-bottom: 5px; }
+        .player-name { font-weight: bold; font-size: 1.2rem; margin-bottom: 5px; }
+        .player-points { color: var(--danger); font-weight: bold; margin-bottom: 15px; }
+
+        .action-area { display: none; }
+        .active-turn .action-area { display: block; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 16px;
+            max-width: 500px; width: 90%; text-align: center;
+        }
+        .modal-answer { font-size: 2rem; color: var(--primary); font-weight: bold; margin: 15px 0; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA 1: Quantidade de Jogadores -->
+    <div id="screen-1" class="screen active">
+        <h1>Nem a Pau! 🛑</h1>
+        <div class="card">
+            <h2>Quantos jogadores?</h2>
+            <input type="number" id="num-players" min="2" max="10" value="2">
+            <button onclick="goToScreen2()">Avançar</button>
+        </div>
+    </div>
+
+    <!-- TELA 2: Nomes dos Jogadores -->
+    <div id="screen-2" class="screen">
+        <h1>Nem a Pau! 🛑</h1>
+        <div class="card">
+            <h2>Nomes dos Jogadores</h2>
+            <div id="names-container"></div>
+            <button onclick="startGame()">Começar Jogo</button>
+        </div>
+    </div>
+
+    <!-- TELA 3: Jogo Principal -->
+    <div id="screen-game" class="screen">
+        <div class="game-info">
+            <span id="round-counter">Rodada 1/10</span>
+        </div>
+        
+        <div class="card">
+            <div class="question" id="question-text">Carregando...</div>
+            <div id="last-guess-display" class="last-guess" style="display: none;"></div>
+        </div>
+
+        <div class="players-grid" id="players-grid">
+            <!-- Cards dos jogadores gerados via JS -->
+        </div>
+    </div>
+
+    <!-- MODAL DE RESULTADO -->
+    <div id="result-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">Fim da Rodada!</h2>
+            <p>A resposta exata era:</p>
+            <div class="modal-answer" id="modal-answer-val">0</div>
+            <p id="modal-desc" style="margin-bottom: 20px; font-size: 1.1rem;"></p>
+            <button onclick="nextRound()" id="btn-next-round">Próxima Rodada</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            // CORPO HUMANO E BIOLOGIA
+            { q: "Quantos ossos tem o corpo humano adulto?", a: "206" },
+            { q: "Quantos ossos tem um cavalo adulto?", a: "205" },
+            { q: "Quantos músculos aproximadamente existem no corpo humano?", a: "600" },
+            { q: "Quantos centímetros tem aproximadamente o intestino delgado de um humano adulto?", a: "600" },
+            { q: "Quantos dias dura, em média, a vida de um glóbulo vermelho no corpo humano?", a: "120" },
+            { q: "Quantos batimentos cardíacos um ser humano em repouso (média de 70bpm) tem em 1 hora exata?", a: "4200" },
+            { q: "Quantos centímetros cúbicos tem o volume cerebral médio de um ser humano adulto?", a: "1300" },
+            { q: "Quantos dentes um tubarão branco pode chegar a ter e perder ao longo de sua vida inteira?", a: "30000" },
+            { q: "Quantas vezes por minuto um beija-flor bate as asas em média?", a: "4800" },
+            { q: "Qual é a força da mordida de um crocodilo-do-nilo em PSI?", a: "5000" },
+            { q: "Quantos quilos pesa em média um elefante africano macho adulto?", a: "6000" },
+            { q: "Qual é o peso do coração de uma baleia azul adulta em quilos?", a: "180" },
+            
+            // GEOGRAFIA E ESTRUTURAS
+            { q: "Quantos quilômetros de extensão tem a Grande Muralha da China?", a: "21196" },
+            { q: "Quantos quilômetros de comprimento tem o Rio Amazonas?", a: "6992" },
+            { q: "Quantos quilômetros de comprimento tem o Rio Nilo?", a: "6650" },
+            { q: "Qual é a altura, em metros, do Monte Everest?", a: "8848" },
+            { q: "Qual é a altura, em metros, do Monte Fuji no Japão?", a: "3776" },
+            { q: "Qual é a altura exata, em metros, do prédio Burj Khalifa?", a: "828" },
+            { q: "Qual é a altura, em metros, do Pão de Açúcar no Rio de Janeiro?", a: "396" },
+            { q: "Qual é a profundidade máxima, em metros, do Lago Baikal?", a: "1642" },
+            { q: "Quantos degraus existem do chão até o topo da Torre Eiffel pela escadaria original?", a: "1665" },
+            { q: "Quantos degraus tem a famosa Escadaria Selarón, no Rio de Janeiro?", a: "215" },
+            { q: "Quantos metros de altura tem a Ponte Golden Gate em São Francisco?", a: "227" },
+            { q: "Quantas ilhas formam o centro histórico de Veneza, na Itália?", a: "118" },
+            { q: "Quantos quartos existem no Palácio de Buckingham?", a: "775" },
+            { q: "Quantas estações de metrô existem em operação na cidade de Nova York?", a: "472" },
+            { q: "Quantos municípios oficiais existem no Brasil, segundo o IBGE?", a: "5570" },
+            { q: "Quantos quilômetros de distância em linha reta separam aproximadamente São Paulo do Rio de Janeiro?", a: "430" },
+            { q: "Quantos quilômetros separam o Oiapoque do Chuí por via rodoviária?", a: "4180" },
+            { q: "Quantos metros de altura tinha originalmente a Grande Pirâmide de Quéops no Egito?", a: "146" },
+            { q: "Quantos quilômetros mede uma volta completa na Terra na altura da Linha do Equador?", a: "40075" },
+
+            // CIÊNCIA, ESPAÇO E FÍSICA
+            { q: "A que velocidade (em quilômetros por segundo) a luz viaja no vácuo (valor exato, sem as decimais)?", a: "299792" },
+            { q: "Qual é a temperatura da superfície do Sol, em graus Celsius (aproximado)?", a: "5500" },
+            { q: "Quantos milhares de quilômetros é a distância média da Terra à Lua?", a: "384" },
+            { q: "Quantos quilômetros de diâmetro tem o planeta Terra no Equador?", a: "12756" },
+            { q: "Quantos dias terrestres leva para Júpiter dar uma volta completa ao redor do Sol (1 ano jupiteriano)?", a: "4333" },
+            { q: "Qual é a velocidade do som no ar ao nível do mar (em km/h)?", a: "1224" },
+            { q: "A que temperatura, em graus Celsius, o ouro começa a derreter (ponto de fusão)?", a: "1064" },
+            { q: "A que temperatura, em graus Celsius, o ferro começa a derreter?", a: "1538" },
+            { q: "Qual é a pressão atmosférica no ponto mais fundo da Fossa das Marianas (em vezes a pressão da superfície)?", a: "1086" },
+            { q: "Quantos dias durou a viagem da missão Apollo 11 de ida e volta à Lua?", a: "8" },
+
+            // ESPORTES E RECORDES
+            { q: "Quantos assentos para espectadores tem o estádio do Maracanã atualmente?", a: "78838" },
+            { q: "Qual é a capacidade máxima de assentos da Arena Corinthians (Neo Química Arena)?", a: "49205" },
+            { q: "Quantos metros exatos tem a prova olímpica de Maratona (dica: converta 42,195 km)?", a: "42195" },
+            { q: "Quantos metros de comprimento tem uma pista oficial de atletismo?", a: "400" },
+            { q: "Quantos centímetros de altura tem o aro de uma tabela de basquete profissional?", a: "305" },
+            { q: "Quantos milímetros de diâmetro tem uma bola de basquete oficial da NBA?", a: "240" },
+            { q: "Qual a pontuação máxima possível de se atingir em uma única partida (linha) de boliche?", a: "300" },
+            { q: "Quantas calorias aproximadamente um adulto de 70kg gasta para correr uma maratona inteira?", a: "2600" },
+            { q: "Qual é o recorde de velocidade mais alta atingida por um carro de Fórmula 1 durante uma corrida oficial (em km/h)?", a: "372" },
+
+            // HISTÓRIA E DATAS (ANOS)
+            { q: "Em que ano o Brasil foi descoberto?", a: "1500" },
+            { q: "Em que ano foi declarada a Independência do Brasil?", a: "1822" },
+            { q: "Em que ano a atual capital do Brasil mudou oficialmente para Brasília?", a: "1960" },
+            { q: "Em que ano a Primeira Guerra Mundial começou?", a: "1914" },
+            { q: "Em que ano a Segunda Guerra Mundial terminou?", a: "1945" },
+            { q: "Em que ano o homem pisou na Lua pela primeira vez?", a: "1969" },
+            { q: "Em que ano ocorreu a queda do Muro de Berlim?", a: "1989" },
+            { q: "Em que ano ocorreu a Revolução Francesa?", a: "1789" },
+            { q: "Em que ano ocorreu o naufrágio do Titanic?", a: "1912" },
+            { q: "Em que ano Santos Dumont fez o primeiro voo do 14-Bis?", a: "1906" },
+            { q: "Em que ano a impressora de tipos móveis foi inventada por Gutenberg?", a: "1440" },
+            { q: "Quantos dias exatos durou a Guerra dos Cem Anos?", a: "42518" },
+            { q: "Quantos anos durou o Império Romano do Ocidente (de 27 a.C. até sua queda em 476 d.C.)?", a: "503" },
+
+            // TECNOLOGIA E ENTRETENIMENTO
+            { q: "Em que ano o Google foi fundado?", a: "1998" },
+            { q: "Em que ano a Netflix foi fundada?", a: "1997" },
+            { q: "Em que ano o primeiro iPhone foi lançado?", a: "2007" },
+            { q: "Em que ano a Microsoft foi fundada?", a: "1975" },
+            { q: "Em que ano a Apple foi fundada?", a: "1976" },
+            { q: "Em que ano o videogame PlayStation 1 foi lançado no Japão?", a: "1994" },
+            { q: "Em que ano o seriado Chaves estreou na televisão no México?", a: "1971" },
+            { q: "Quantos episódios compõem a série clássica de Naruto (sem contar o Shippuden)?", a: "220" },
+            { q: "Quantos episódios compõem o anime Naruto Shippuden?", a: "500" },
+            { q: "Quantos Pokémons oficiais existem na Pokédex Nacional até o final da Geração 9?", a: "1025" },
+            { q: "Quantas páginas tem a primeira edição original em inglês do volume A Sociedade do Anel?", a: "423" },
+            { q: "Qual foi o preço de lançamento do primeiro computador Apple I em 1976, em dólares (sem os centavos)?", a: "666" },
+            { q: "Quantas calorias tem um lanche Big Mac padrão do McDonald's?", a: "503" },
+            { q: "Quantos gramas pesa a estatueta do Oscar?", a: "3850" },
+
+            // MATEMÁTICA E MEDIDAS
+            { q: "Quantos dias tem um ano bissexto?", a: "366" },
+            { q: "Quantos minutos existem em exatamente 1 dia?", a: "1440" },
+            { q: "Quantos segundos existem em exatamente 1 hora?", a: "3600" },
+            { q: "Quantos centavos de Real formam exatamente 1 Real?", a: "100" },
+            { q: "Quantos graus formam um círculo completo?", a: "360" },
+            { q: "Quantos centímetros existem em exatos 5 metros?", a: "500" },
+            { q: "Quantos capítulos possui a Bíblia protestante inteira?", a: "1189" },
+            { q: "Quantos Salmos existem na Bíblia?", a: "150" }
+        ];
+
+
+        let gameQuestions = [];
+        let players = [];
+        let currentRound = 1;
+        let maxRounds = 10;
+        let currentTurnIndex = 0;
+        let lastGuess = null;
+        let lastGuesserIndex = null;
+        let currentQuestionObj = null;
+
+        const avatars = ["🧑‍🚀", "🧙‍♂️", "🥷", "🧛", "🧜‍♀️", "🦸‍♂️", "🦹", "🧟"];
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function goToScreen2() {
+            const num = parseInt(document.getElementById('num-players').value);
+            if(num < 2) return alert("Mínimo de 2 jogadores!");
+            
+            const container = document.getElementById('names-container');
+            container.innerHTML = '';
+            for(let i = 0; i < num; i++) {
+                container.innerHTML += `<input type="text" id="player-name-${i}" placeholder="Nome do Jogador ${i+1}" required>`;
+            }
+            showScreen('screen-2');
+        }
+
+        function startGame() {
+            const inputs = document.querySelectorAll('#names-container input');
+            players = [];
+            inputs.forEach((input, index) => {
+                let name = input.value.trim() || `Jogador ${index+1}`;
+                players.push({ name: name, points: 0, avatar: avatars[index % avatars.length] });
+            });
+
+            // Prepara perguntas e zera status
+            gameQuestions = [...allQuestions].sort(() => Math.random() - 0.5);
+            currentRound = 1;
+            
+            showScreen('screen-game');
+            setupRound();
+        }
+
+        function setupRound() {
+            if(currentRound > maxRounds) {
+                finishGame();
+                return;
+            }
+
+            currentQuestionObj = gameQuestions.pop();
+            document.getElementById('question-text').innerText = currentQuestionObj.q;
+            document.getElementById('round-counter').innerText = `Rodada ${currentRound}/10`;
+            
+            lastGuess = null;
+            lastGuesserIndex = null;
+            document.getElementById('last-guess-display').style.display = 'none';
+
+            // O perdedor da rodada anterior (se houver) começa, senão o jogador 0
+            renderPlayers();
+        }
+
+        function renderPlayers() {
+            const grid = document.getElementById('players-grid');
+            grid.innerHTML = '';
+
+            players.forEach((p, i) => {
+                const isTurn = (i === currentTurnIndex);
+                const isFirstTurnOfRound = (lastGuess === null);
+                
+                grid.innerHTML += `
+                    <div class="player-card ${isTurn ? 'active-turn' : ''}" id="card-${i}">
+                        <div class="player-icon">${p.avatar}</div>
+                        <div class="player-name">${p.name}</div>
+                        <div class="player-points">${p.points} pontos (punição)</div>
+                        
+                        <div class="action-area">
+                            <input type="number" id="guess-${i}" placeholder="Seu palpite...">
+                            <button onclick="makeGuess(${i})">Apostar</button>
+                            ${!isFirstTurnOfRound ? `<button class="btn-danger" onclick="callNemAPau(${i})">Nem a pau! 🛑</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if(lastGuess !== null) {
+                const display = document.getElementById('last-guess-display');
+                display.style.display = 'block';
+                display.innerText = `Último palpite: ${lastGuess} (${players[lastGuesserIndex].name})`;
+            }
+        }
+
+        function makeGuess(playerIndex) {
+            const input = document.getElementById(`guess-${playerIndex}`);
+            const guess = parseInt(input.value);
+
+            if(isNaN(guess)) return alert("Digite um número válido!");
+            if(lastGuess !== null && guess <= lastGuess) {
+                return alert(`Seu palpite deve ser MAIOR que ${lastGuess}! Se acha que é menor, clique em "Nem a pau!"`);
+            }
+
+            lastGuess = guess;
+            lastGuesserIndex = playerIndex;
+            
+            // Passa a vez
+            currentTurnIndex = (currentTurnIndex + 1) % players.length;
+            renderPlayers();
+        }
+
+        function callNemAPau(challengerIndex) {
+            const realAnswer = parseInt(currentQuestionObj.a);
+            let loserIndex;
+            let msg = "";
+
+            // Se a resposta real for MAIOR OU IGUAL ao palpite, o desafiante errou e toma ponto.
+            if (realAnswer >= lastGuess) {
+                loserIndex = challengerIndex;
+                msg = `O palpite de ${lastGuess} estava seguro! A resposta real é até maior/igual.<br><br><b>${players[challengerIndex].name}</b> duvidou na hora errada e tomou 1 ponto de punição.`;
+            } else {
+                // Se a resposta real for MENOR, o último que apostou exagerou e toma ponto.
+                loserIndex = lastGuesserIndex;
+                msg = `O palpite de ${lastGuess} foi alto demais!<br><br><b>${players[lastGuesserIndex].name}</b> exagerou e tomou 1 ponto de punição.`;
+            }
+
+            players[loserIndex].points += 1;
+            
+            // Quem perdeu a rodada, começa a próxima
+            currentTurnIndex = loserIndex;
+
+            showModal(realAnswer, msg);
+        }
+
+        function showModal(answer, description) {
+            document.getElementById('modal-answer-val').innerText = answer;
+            document.getElementById('modal-desc').innerHTML = description;
+            
+            if(currentRound === maxRounds) {
+                document.getElementById('btn-next-round').innerText = "Ver Vencedor!";
+            } else {
+                document.getElementById('btn-next-round').innerText = "Próxima Rodada";
+            }
+            
+            document.getElementById('result-modal').style.display = 'flex';
+        }
+
+        function nextRound() {
+            document.getElementById('result-modal').style.display = 'none';
+            currentRound++;
+            setupRound();
+        }
+
+        function finishGame() {
+            document.getElementById('screen-game').classList.remove('active');
+            
+            // Encontra o(s) jogador(es) com MENOS pontos
+            let minPoints = Math.min(...players.map(p => p.points));
+            let winners = players.filter(p => p.points === minPoints);
+            
+            let winnerText = winners.length > 1 
+                ? `Empate! Vencedores: ${winners.map(w => w.name).join(' e ')}` 
+                : `🏆 Vencedor: ${winners[0].name} 🏆`;
+
+            const container = document.getElementById('screen-1');
+            container.innerHTML = `
+                <h1>Fim de Jogo!</h1>
+                <div class="card">
+                    <h2 style="color: var(--primary); font-size: 2rem;">${winnerText}</h2>
+                    <p style="margin-bottom: 20px;">Com apenas ${minPoints} ponto(s) de punição!</p>
+                    <hr style="margin: 20px 0; border: 1px solid #E5E7EB;">
+                    <h3>Placar Final:</h3>
+                    ${players.sort((a,b) => a.points - b.points).map(p => `<p style="font-size: 1.2rem; margin: 10px 0;">${p.name}: ${p.points} pontos</p>`).join('')}
+                    <button onclick="location.reload()" style="margin-top: 30px;">Jogar Novamente</button>
+                </div>
+            `;
+            container.classList.add('active');
+        }
+    </script>
+</body>
+</html>
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nem a Pato! 🦆</title>
     <style>
         :root {
