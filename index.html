@@ -183,20 +183,16 @@
             transition: opacity 0.5s ease-out;
         }
 
-        #cavebaby-container {
-            font-size: 5rem;
-            position: relative;
-            /* Começa fora da tela pela esquerda */
-            transform: translateX(-150vw); 
-            animation: crawl 2s ease-out forwards;
+        #club-container {
+            /* Animação do crescimento */
+            animation: growClub 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
         #club-emoji {
-            position: absolute;
-            right: -30px;
-            top: -10px;
-            font-size: 4rem;
+            display: inline-block;
+            font-size: 6rem; /* Tamanho base */
             transform-origin: bottom left;
+            transform: rotate(45deg); /* Começa erguido, pronto para bater */
         }
 
         #splash-text {
@@ -209,19 +205,15 @@
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* Animação do engatinhar (pulos curtos) */
-        @keyframes crawl {
-            0% { transform: translateX(-150vw) rotate(-10deg) translateY(0); }
-            20% { transform: translateX(-90vw) rotate(10deg) translateY(-20px); }
-            40% { transform: translateX(-30vw) rotate(-10deg) translateY(0); }
-            60% { transform: translateX(10vw) rotate(10deg) translateY(-20px); }
-            80% { transform: translateX(20vw) rotate(-10deg) translateY(0); }
-            100% { transform: translateX(0) rotate(0deg) translateY(0); } /* Para no meio */
+        /* O tacape surge do nada e fica gigante */
+        @keyframes growClub {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(2.5); opacity: 1; }
         }
 
-        /* Animação da batida do tacape */
+        /* A batida violenta */
         .slam-animation {
-            animation: slam 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation: slam 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
         @keyframes slam {
@@ -229,7 +221,7 @@
             100% { transform: rotate(-70deg) translateY(20px); }
         }
 
-        /* Tremor da tela inteira */
+        /* Tremor da tela */
         .shake-screen {
             animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
         }
@@ -237,23 +229,22 @@
         @keyframes shake {
             10%, 90% { transform: translate3d(-2px, 0, 0); }
             20%, 80% { transform: translate3d(4px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
-            40%, 60% { transform: translate3d(8px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-10px, 0, 0); }
+            40%, 60% { transform: translate3d(10px, 0, 0); }
         }
     </style>
 </head>
 <body>
     <!-- ANIMAÇÃO DE ABERTURA (SPLASH SCREEN) -->
     <div id="splash-screen">
-        <div id="cavebaby-container">
-            <span id="baby-emoji">👶</span>
-            <span id="club-emoji" style="display: none;">🪵</span>
+        <div id="club-container">
+            <span id="club-emoji">🪵</span>
         </div>
         <div id="splash-text">NEM A PAU!</div>
     </div>
     <!-- TELA 1 -->
     <div id="screen-1" class="screen active">
-        <h1>Nem a pau! 🛑</h1>
+        <h1>Nem a pau! 🪵</h1>
         <div class="card">
             <h2>Quantos jogadores?</h2>
             <input type="number" id="num-players" min="2" max="10" value="2">
@@ -263,7 +254,7 @@
 
     <!-- TELA 2 -->
     <div id="screen-2" class="screen">
-        <h1>Nem a pau! 🛑</h1>
+        <h1>Nem a pau! 🪵</h1>
         <div class="card">
             <h2>Nomes dos Jogadores</h2>
             <div id="names-container"></div>
@@ -301,38 +292,31 @@
     <script>
         // CONTROLE DA ANIMAÇÃO INICIAL
         window.addEventListener('load', () => {
-            const baby = document.getElementById('baby-emoji');
-            const club = document.getElementById('club-emoji');
+            const clubEmoji = document.getElementById('club-emoji');
             const splashText = document.getElementById('splash-text');
             const splashScreen = document.getElementById('splash-screen');
             
-            // Aguarda 2 segundos para o engatinhar terminar
+            // Aguarda 1.2 segundos para o tacape atingir o tamanho máximo
             setTimeout(() => {
-                // Bebê fica bravo e puxa o tacape
-                baby.innerText = "😠";
-                club.style.display = "inline-block";
+                // Aciona a animação da pancada
+                clubEmoji.classList.add('slam-animation');
                 
-                // Dá um tempinho dramático de 0.5s e bate o tacape
+                // Treme a tela e revela o título no exato momento do impacto (150ms depois)
                 setTimeout(() => {
-                    club.classList.add('slam-animation');
+                    document.body.classList.add('shake-screen');
+                    splashText.style.opacity = '1';
+                    splashText.style.transform = 'scale(1)';
                     
-                    // Treme a tela e mostra o texto "NEM A PAU!" no exato momento da batida
+                    // Espera 1.5s para a galera ver o estrago e remove a tela
                     setTimeout(() => {
-                        document.body.classList.add('shake-screen');
-                        splashText.style.opacity = '1';
-                        splashText.style.transform = 'scale(1)';
-                        
-                        // Aguarda 1.5s e some com a tela de carregamento para o jogo começar
+                        splashScreen.style.opacity = '0';
                         setTimeout(() => {
-                            splashScreen.style.opacity = '0';
-                            setTimeout(() => {
-                                splashScreen.style.display = 'none';
-                                document.body.classList.remove('shake-screen');
-                            }, 500);
-                        }, 1500);
-                    }, 150); // Delay do movimento da batida
-                }, 500);
-            }, 2000); // Duração do engatinhar
+                            splashScreen.style.display = 'none';
+                            document.body.classList.remove('shake-screen');
+                        }, 500);
+                    }, 1500);
+                }, 150);
+            }, 1200);
         });
         const allQuestions = [
             // CORPO HUMANO E BIOLOGIA
@@ -475,7 +459,7 @@
                         <div class="action-area">
                             <input type="number" id="guess-${i}" placeholder="Digite seu palpite...">
                             <button onclick="makeGuess(${i})">Confirmar Palpite</button>
-                            ${!isFirstTurnOfRound ? `<button class="btn-danger" onclick="callNemAPau(${i})">Nem a pau! 🛑</button>` : ''}
+                            ${!isFirstTurnOfRound ? `<button class="btn-danger" onclick="callNemAPau(${i})">Nem a pau! 🪵</button>` : ''}
                         </div>
                     </div>
                 `;
