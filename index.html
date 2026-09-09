@@ -175,57 +175,69 @@
             top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg);
             z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
             overflow: hidden;
             transition: opacity 0.5s ease-out;
         }
 
-        #club-container {
-            /* Animação do crescimento */
-            animation: growClub 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        #splash-text {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 3.5rem;
+            color: var(--danger);
+            font-weight: 900;
+            opacity: 0;
+            text-align: center;
+            width: 100%;
         }
 
         #club-emoji {
-            display: inline-block;
-            font-size: 6rem; /* Tamanho base */
-            transform-origin: bottom left;
-            transform: rotate(45deg); /* Começa erguido, pronto para bater */
+            position: absolute;
+            left: 50%;
+            top: -150px;
+            transform: translateX(-50%) rotate(20deg);
+            font-size: 6rem;
         }
 
-        #splash-text {
-            font-size: 3rem;
-            color: var(--danger);
-            font-weight: 900;
-            margin-top: 20px;
-            opacity: 0;
-            transform: scale(0.5);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* 1. Texto surge no meio */
+        .text-pop {
+            animation: popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn {
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
-        /* O tacape surge do nada e fica gigante */
-        @keyframes growClub {
-            0% { transform: scale(0); opacity: 0; }
-            100% { transform: scale(2.5); opacity: 1; }
+        /* 2. Madeira cai até o texto */
+        .wood-fall {
+            animation: woodDrop 0.4s cubic-bezier(0.5, 0, 1, 1) forwards;
+        }
+        @keyframes woodDrop {
+            100% { top: 40%; transform: translateX(-50%) rotate(90deg); }
         }
 
-        /* A batida violenta */
-        .slam-animation {
-            animation: slam 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        /* 3. Madeira empurra o texto (e para no chão) */
+        .wood-smash {
+            animation: woodPush 0.3s ease-in forwards;
+        }
+        @keyframes woodPush {
+            0% { top: 40%; transform: translateX(-50%) rotate(90deg); }
+            100% { top: calc(100% - 100px); transform: translateX(-50%) rotate(95deg); }
         }
 
-        @keyframes slam {
-            0% { transform: rotate(45deg); }
-            100% { transform: rotate(-70deg) translateY(20px); }
+        /* 4. Texto despenca para fora da tela */
+        .text-smash {
+            animation: textPush 0.3s ease-in forwards;
+        }
+        @keyframes textPush {
+            0% { top: 50%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { top: 150%; transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
-        /* Tremor da tela */
+        /* Tremor da tela no impacto */
         .shake-screen {
-            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+            animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
         }
-
         @keyframes shake {
             10%, 90% { transform: translate3d(-2px, 0, 0); }
             20%, 80% { transform: translate3d(4px, 0, 0); }
@@ -237,10 +249,8 @@
 <body>
     <!-- ANIMAÇÃO DE ABERTURA (SPLASH SCREEN) -->
     <div id="splash-screen">
-        <div id="club-container">
-            <span id="club-emoji">🪵</span>
-        </div>
         <div id="splash-text">NEM A PAU!</div>
+        <span id="club-emoji">🪵</span>
     </div>
     <!-- TELA 1 -->
     <div id="screen-1" class="screen active">
@@ -292,30 +302,39 @@
     <script>
         // CONTROLE DA ANIMAÇÃO INICIAL
         window.addEventListener('load', () => {
-            const clubEmoji = document.getElementById('club-emoji');
-            const splashText = document.getElementById('splash-text');
-            const splashScreen = document.getElementById('splash-screen');
+            const text = document.getElementById('splash-text');
+            const wood = document.getElementById('club-emoji');
+            const splash = document.getElementById('splash-screen');
             
-            // Aguarda 1.2 segundos para o tacape atingir o tamanho máximo
+            // 1. O texto surge no centro após 0.2s
             setTimeout(() => {
-                // Aciona a animação da pancada
-                clubEmoji.classList.add('slam-animation');
+                text.classList.add('text-pop');
+            }, 200);
+
+            // 2. A madeira despenca de cima
+            setTimeout(() => {
+                wood.classList.add('wood-fall');
                 
-                // Treme a tela e revela o título no exato momento do impacto (150ms depois)
+                // 3. O impacto (0.4s depois, que é a duração da queda)
                 setTimeout(() => {
-                    document.body.classList.add('shake-screen');
-                    splashText.style.opacity = '1';
-                    splashText.style.transform = 'scale(1)';
+                    wood.classList.remove('wood-fall');
+                    wood.classList.add('wood-smash');
                     
-                    // Espera 1.5s para a galera ver o estrago e remove a tela
+                    text.classList.remove('text-pop');
+                    text.classList.add('text-smash');
+                    
+                    document.body.classList.add('shake-screen'); // Treme a tela no baque
+                    
+                    // 4. Madeira repousa no chão por 1 segundo, então a tela do jogo é revelada
                     setTimeout(() => {
-                        splashScreen.style.opacity = '0';
+                        splash.style.opacity = '0';
                         setTimeout(() => {
-                            splashScreen.style.display = 'none';
+                            splash.style.display = 'none';
                             document.body.classList.remove('shake-screen');
                         }, 500);
-                    }, 1500);
-                }, 150);
+                    }, 1000);
+                    
+                }, 400);
             }, 1200);
         });
         const allQuestions = [
